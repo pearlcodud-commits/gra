@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>꺾은선그래프 탐정단</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 신나는 4학년 교실 게임, 교과서 '디지털 콕콕' 단계 그대로
+   IDEA: 모눈 공책 위에서 푸는 탐정 미션 카드
+   PICTURE: 직접 점 찍는 모눈 꺾은선그래프 판
+   COLOUR and TYPE: 민트 바탕, 코랄 점·선, 노랑 보상 / Jua + Noto Sans KR
+   LAYOUT: 점수바 → 단계 탭 → 큰 작업판 하나 */
+:root{color-scheme:light dark;--bg:light-dark(#eaf8f4,#0d1b1a);--card:light-dark(#ffffff,#152b29);--ink:light-dark(#15302c,#e4f4f1);--mute:light-dark(#587470,#9dbdb7);--mint:#17a998;--mintS:light-dark(#c8eee6,#1d4842);--coral:#ff5a4c;--yel:#ffc21f;--yelS:light-dark(#fff1c2,#4a3d12);--line:light-dark(#cbe2dd,#2a4844);--gm:light-dark(#dbe8e5,#233d3a);--gM:light-dark(#7f9a95,#6b8e88);--ok:#13995a;--bad:#e5484d}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;color:var(--ink);font:16px/1.6 'Noto Sans KR',system-ui,sans-serif;overflow-x:clip;background:var(--bg);background-image:linear-gradient(var(--gm) 1px,transparent 1px),linear-gradient(90deg,var(--gm) 1px,transparent 1px);background-size:28px 28px}
+h1,h2,h3,.jua{font-family:Jua,'Noto Sans KR',sans-serif;font-weight:400;line-height:1.15;margin:0}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:0 max(3vw,12px) 40px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 0}
+.logo{font-size:clamp(24px,4vw,34px);color:var(--mint)}
+.logo span{color:var(--coral)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--card);border:2px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:700;font-size:15px;min-height:44px;display:flex;align-items:center;gap:6px}
+button.chip:hover{border-color:var(--mint)}
+.steps{display:flex;gap:6px;overflow-x:auto;padding:4px 0 12px}
+.steps button{flex:none;border:0;border-radius:12px;padding:8px 14px;min-height:44px;background:var(--card);color:var(--mute);font-family:Jua,sans-serif;font-size:17px;border:2px solid var(--line)}
+.steps button.done{color:var(--mint)}
+.steps button.on{background:var(--mint);color:#fff;border-color:var(--mint)}
+.steps button:disabled{opacity:.45;cursor:default}
+.board{background:var(--card);border:3px solid var(--line);border-radius:22px;padding:clamp(16px,3vw,30px);box-shadow:0 6px 0 var(--line)}
+.ttl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.tag{background:var(--mint);color:#fff;font-family:Jua,sans-serif;font-size:20px;padding:4px 18px 4px 14px;border-radius:8px 30px 30px 8px}
+.ttl h2{font-size:clamp(22px,3.2vw,30px)}
+.sub{color:var(--mute);margin:0 0 16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:14px}
+.tc{position:relative;text-align:left;border:3px solid var(--line);background:var(--card);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:4px;transition:transform .15s,border-color .15s}
+.tc:hover,.tc:focus-visible{transform:translateY(-4px) rotate(-1deg);border-color:var(--coral);outline:none}
+.tc .em{font-size:40px;line-height:1}
+.tc .cat{font-size:13px;font-weight:700;color:var(--mint)}
+.tc b{font-size:17px;line-height:1.3}
+.tc small{color:var(--mute)}
+.best{position:absolute;top:10px;right:10px;background:var(--yel);color:#3a2c00;font-weight:900;font-size:13px;padding:2px 8px;border-radius:999px}
+.big{border:0;border-radius:14px;padding:12px 22px;min-height:48px;font-family:Jua,sans-serif;font-size:20px;background:var(--coral);color:#fff;box-shadow:0 4px 0 #c43d31}
+.big:active{transform:translateY(3px);box-shadow:0 1px 0 #c43d31}
+.big.m{background:var(--mint);box-shadow:0 4px 0 #0e7a6d}
+.big.y{background:var(--yel);color:#3a2c00;box-shadow:0 4px 0 #c29000}
+.big:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bubble{position:relative;display:inline-block;background:var(--card);border:3px solid var(--line);border-radius:20px;padding:12px 20px;font-family:Jua,sans-serif;font-size:21px;margin:0 0 18px 56px}
+.bubble::before{content:attr(data-em);position:absolute;left:-58px;top:50%;transform:translateY(-50%);font-size:42px}
+.mission{background:var(--yelS);border-radius:14px;padding:12px 16px;font-weight:700;margin-bottom:16px}
+.portal{border:2px solid var(--line);border-radius:14px;overflow:hidden}
+.pbar{background:var(--mint);color:#fff;padding:8px 14px;font-weight:700;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:15px}
+.pbody{padding:16px}
+.cond{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;border:1px solid var(--line);padding:14px;border-radius:10px}
+.cond label{font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select,input[type=text]{min-height:44px;font-size:16px;border:2px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--card)}
+select:focus,input:focus,button:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.fb{min-height:28px;margin:12px 0 0;font-weight:700}
+.fb.ok{color:var(--ok)}.fb.bad{color:var(--bad)}
+table{border-collapse:collapse}
+.ptab{width:100%;max-width:560px;margin-top:14px;font-size:16px}
+.ptab th,.ptab td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:center}.ptab td{white-space:nowrap}
+.ptab th{background:var(--mintS)}
+.ptab td.n{text-align:right;font-weight:700;white-space:nowrap}
+.src{font-size:13px;color:var(--mute);margin-top:8px}
+.scroll{overflow-x:auto}
+.htab{margin:8px auto;font-size:18px;border:3px solid #8cc56b;border-radius:14px;border-collapse:separate;border-spacing:0;overflow:hidden}
+.htab th,.htab td{border:1px solid #b8dca1;padding:5px;text-align:center;min-width:62px}
+.htab th{background:#c4df9b;color:#1f3a12;font-family:Jua,sans-serif;font-weight:400;padding:6px 10px;min-width:0;max-width:7.5em;line-height:1.2}
+.htab td{background:var(--card)}
+.pool{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:2px dashed var(--line);border-radius:12px;min-height:64px;align-items:center;margin:10px 0}
+.pool.over{border-color:var(--mint);background:var(--mintS)}
+.pl{font-weight:900;font-size:14px;color:var(--mute);margin-right:4px;flex:none}
+.tile{display:inline-flex;align-items:center;justify-content:center;min-width:50px;min-height:44px;padding:4px 8px;border-radius:10px;font-weight:900;font-size:17px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 3px 0 rgba(0,0,0,.2);white-space:nowrap}
+.tile.y{background:#c4df9b;color:#1f3a12}.tile.v{background:var(--yel);color:#3a2c00}
+.tile.sel{outline:3px solid var(--coral);outline-offset:2px;transform:translateY(-3px)}
+.tile.lift{opacity:.3}
+.ghost{position:fixed;z-index:20;pointer-events:none;transform:translate(-50%,-60%) scale(1.12) rotate(-3deg);box-shadow:0 10px 18px rgba(0,0,0,.3)}
+.slot{width:100%;min-width:56px;min-height:54px;border:2px dashed var(--gM);border-radius:10px;background:transparent;padding:3px;display:flex;align-items:center;justify-content:center;color:var(--mute);font-weight:900;font-size:20px}
+.slot.over{border-color:var(--mint);border-style:solid;background:var(--mintS)}
+.slot.ok{border:3px solid var(--ok)}.slot.bad{border:3px solid var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.htab input{width:100%;min-width:70px;text-align:center;min-height:44px;font-size:18px;border:2px dashed var(--line);border-radius:8px;background:transparent}
+.htab input.ok{border:2px solid var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.htab input.bad{border:2px solid var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.cap{font-family:Jua,sans-serif;font-size:22px;color:var(--coral);text-align:center;border:3px solid var(--mint);border-radius:12px;padding:4px 18px;display:table;margin:0 auto 6px}
+.grid2{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.todo{list-style:none;padding:0;margin:0 0 14px;display:grid;gap:6px}
+.todo li{padding:8px 12px;border-radius:10px;background:var(--bg);font-weight:700;color:var(--mute)}
+.todo li.now{background:var(--yelS);color:var(--ink)}
+.todo li.fin{color:var(--ok)}
+.todo li.fin::before{content:'✔ '}
+.todo.h{display:flex;flex-wrap:wrap;gap:6px}.todo.h li{flex:1 1 150px;text-align:center}
+.gpanel{background:var(--yelS);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.gpanel .fb{margin-top:8px;min-height:0}
+.fig .ph{display:grid;place-items:center;height:100%;background:var(--card);border-radius:12px;font-family:Jua;font-size:26px;color:var(--mute);text-align:center;padding:20px}
+.yl{font-size:17px!important}.xl{font-size:18px!important}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{border:3px solid var(--line);background:var(--card);border-radius:12px;padding:8px 16px;min-height:48px;font-weight:700;font-size:17px}
+.opt:hover{border-color:var(--mint)}
+.opt.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,var(--card))}
+.opt.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,var(--card))}
+.fig{position:relative;width:100%;aspect-ratio:900/600;min-height:240px;background:#c4df9b;border-radius:16px;padding:6px}
+.fig svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
+.pa{fill:var(--card)}
+.gm{stroke:var(--gm);stroke-width:1}.gM{stroke:var(--gM);stroke-width:1.5}.gv{stroke:var(--gM);stroke-width:1}
+.fr{fill:none;stroke:#3d4f4b;stroke-width:2}
+.yl{font:700 15px 'Noto Sans KR',sans-serif;fill:#1f3a12;text-anchor:end}
+.xl{font:700 16px 'Noto Sans KR',sans-serif;fill:#1f3a12;text-anchor:middle}
+.ul{font:700 14px 'Noto Sans KR',sans-serif;fill:#1f3a12}
+.gt{font:24px Jua,sans-serif;fill:var(--coral);text-anchor:middle}
+.hv{stroke:var(--coral);stroke-dasharray:5 4;stroke-width:1.5}
+.ro{font:700 15px 'Noto Sans KR',sans-serif;fill:#fff}
+.pt{fill:var(--coral);stroke:#fff;stroke-width:2}
+.pt.g{fill:var(--ok)}.pt.b{fill:var(--bad)}
+.ln{fill:none;stroke:var(--coral);stroke-width:3.5;stroke-linejoin:round;stroke-dasharray:3000;stroke-dashoffset:3000;animation:draw 1.4s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.qcard{background:var(--bg);border-radius:16px;padding:18px}
+.qn{font-family:Jua,sans-serif;color:var(--coral);font-size:18px}
+.qt{font-size:20px;font-weight:900;margin:4px 0 14px;line-height:1.4}
+.score{font-family:Jua,sans-serif;font-size:clamp(64px,12vw,110px);color:var(--coral);line-height:1;text-align:center}
+.bars{display:grid;gap:8px;max-width:520px;margin:16px auto}
+.bar{display:grid;grid-template-columns:7em minmax(0,1fr) 4.5em;gap:10px;align-items:center;font-weight:700}
+.bar i{display:block;height:16px;border-radius:9px;background:var(--mint)}
+.bar .tr{background:var(--bg);border-radius:9px}
+.bar b{text-align:right;white-space:nowrap}
+.gacha{text-align:center;margin:20px 0}
+.cap2{font-size:90px;display:inline-block;line-height:1}
+.shake{animation:sh .9s}
+@keyframes sh{0%,100%{transform:rotate(0)}20%{transform:rotate(-18deg) scale(1.1)}40%{transform:rotate(16deg)}60%{transform:rotate(-12deg) scale(1.15)}80%{transform:rotate(8deg)}}
+.prize{display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:14px 26px;border-radius:18px;border:4px solid var(--line);background:var(--card);animation:pop .5s}
+.prize .e{font-size:72px;line-height:1}
+.r0{border-color:#9fb8b3}.r1{border-color:#4f8cff}.r2{border-color:var(--yel);box-shadow:0 0 24px var(--yel)}
+.rk{font-size:13px;font-weight:900;padding:2px 10px;border-radius:999px;color:#fff}
+.rk.r0{background:#7d9893}.rk.r1{background:#4f8cff}.rk.r2{background:#e0a400}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+#ov.on{display:flex}
+#ov .board{max-width:640px;width:100%;max-height:88vh;overflow:auto}
+#ov .ln{animation:none;stroke-dashoffset:0}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:12px}
+.gcard{position:relative;border:3px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
+.gview{display:block;width:100%;border:0;padding:6px;background:#c4df9b;cursor:zoom-in}.gview svg{width:100%;height:auto;display:block}
+.gmeta{padding:8px 12px;display:flex;flex-direction:column;gap:2px}.gmeta b{font-size:16px}.gmeta span{font-size:13px;color:var(--mute)}
+.gdel{position:absolute;right:8px;bottom:8px;border:0;background:transparent;font-size:18px;min-height:36px;min-width:36px;opacity:.6}.gdel:hover{opacity:1}
+.alb{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px;margin-top:12px}
+.alb div{border:3px solid var(--line);border-radius:14px;text-align:center;padding:8px 4px;font-size:13px;font-weight:700}
+.alb div span{display:block;font-size:38px;line-height:1.2}
+.alb div.no{opacity:.35}
+.cf{position:fixed;top:-20px;width:10px;height:14px;z-index:8;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.foot{font-size:13px;color:var(--mute);margin-top:18px;text-align:center}
+.hint{font-size:14px;color:var(--mute)}
+@media(prefers-reduced-motion:reduce){.ln{animation:none;stroke-dashoffset:0}.shake,.prize,.cf{animation:none}.tc{transition:none}}
+@media(max-width:600px){.htab{font-size:15px}.htab th,.htab td{min-width:64px}.bubble{font-size:18px}}
+</style></head><body>
+<div class="wrap">
+  <header class="top">
+    <h1 class="logo">꺾은선그래프 <span>탐정단</span></h1>
+    <div class="chips" id="chips"></div>
+  </header>
+  <nav class="steps" id="steps" aria-label="단계"></nav>
+  <main id="app"></main>
+  <p class="foot">자료는 공개된 통계·공식 기록을 바탕으로 했어요. 단위를 맞추려고 일부 값은 어림했어요. (연습용 포털 화면이에요)</p>
+</div>
+<div id="ov" role="dialog" aria-modal="true"><div class="board" id="ovb"></div></div>
+<script>
+{
+const WAVE='wave';
+const D=[
+{id:'dust',em:'🌫️',cat:'날씨',name:'서울 지점 황사일수',say:'우리 지역의 연도별 황사일수',label:'황사일수',unit:'일',xu:'년',x:['2018','2019','2020','2021','2022'],v:[5,3,6,14,5],base:0,step:1,src:'기상청 기상자료개방포털 (교과서 예시와 같은 자료)',decoy:['서울 지점 강수일수','서울 지점 눈일수'],q:{t:'2021년 황사일수는 2020년보다 며칠 더 많나요?',o:['6일','8일','9일','14일'],a:1,e:'14 − 6 = 8, 그래서 8일 더 많아요.'}},
+{id:'heat',em:'🥵',cat:'날씨',name:'전국 폭염일수',say:'전국의 연도별 폭염일수',label:'폭염일수',unit:'일',xu:'년',x:['2019','2020','2021','2022','2023','2024'],v:[13,8,12,11,14,30],base:0,step:1,src:'기상청 (전국 평균, 소수 첫째 자리에서 반올림)',decoy:['전국 열대야일수','전국 황사일수'],q:{t:'폭염일은 하루 가장 높은 기온이 몇 ℃ 이상인 날일까요?',o:['25℃','30℃','33℃','40℃'],a:2,e:'기상청은 하루 최고기온이 33℃ 이상인 날을 폭염일로 세어요.'}},
+{id:'ohtani',em:'⚾',cat:'야구',name:'오타니 쇼헤이 시즌 홈런 수',say:'오타니 선수의 연도별 홈런 수',label:'홈런 수',unit:'개',xu:'년',x:['2020','2021','2022','2023','2024','2025'],v:[7,46,34,44,54,55],base:0,step:1,src:'메이저리그(MLB) 정규시즌 공식 기록',decoy:['오타니 쇼헤이 도루 수','오타니 쇼헤이 삼진 수'],q:{t:'2020년에 홈런이 확 적었던 가장 큰 까닭은?',o:['일본 리그로 돌아가서','코로나19로 시즌 경기 수가 크게 줄어서','투수만 해서','한 경기도 안 나와서'],a:1,e:'2020년 메이저리그는 코로나19 때문에 팀마다 60경기만 치렀어요. 경기가 적으니 홈런도 적었지요.'}},
+{id:'son',em:'⚽',cat:'축구',name:'손흥민 프리미어리그 골 수',say:'손흥민 선수의 시즌별 리그 골 수',label:'골 수',unit:'골',xu:'시즌',x:['18-19','19-20','20-21','21-22','22-23','23-24'],v:[12,11,17,23,10,17],base:0,step:1,src:'프리미어리그 공식 기록 (토트넘 시절 정규리그)',decoy:['손흥민 도움 수','손흥민 출전 경기 수'],q:{t:'손흥민 선수가 23골을 넣은 21-22 시즌에 받은 상은?',o:['신인상','득점왕(골든 부트)','골키퍼상','감독상'],a:1,e:'21-22 시즌 23골로 프리미어리그 공동 득점왕이 되었어요. 아시아 선수로는 처음이에요!'}},
+{id:'lg',em:'🏟️',cat:'야구',name:'LG 트윈스 정규시즌 승리 수',say:'LG 트윈스의 연도별 승리 수',label:'승리 수',unit:'승',xu:'년',x:['2021','2022','2023','2024','2025'],v:[72,87,86,76,85],base:60,step:1,src:'KBO 공식 기록',decoy:['LG 트윈스 패배 수','LG 트윈스 홈런 수'],q:WAVE},
+{id:'kbo',em:'🎟️',cat:'야구',name:'프로야구(KBO) 정규시즌 관중 수',say:'프로야구의 연도별 관중 수',label:'관중 수',unit:'만 명',xu:'년',x:['2020','2021','2022','2023','2024','2025'],v:[33,123,607,810,1089,1231],base:0,step:1,src:'KBO 발표 (만 명 아래는 반올림)',decoy:['프로축구 관중 수','프로농구 관중 수'],q:{t:'2020년 관중이 아주 적었던 까닭은?',o:['야구장을 고치느라','코로나19로 관중 없이 경기한 날이 많아서','표 값이 너무 비싸서','비가 계속 와서'],a:1,e:'2020년에는 코로나19 때문에 대부분 관중 없이 경기를 했어요.'}},
+{id:'lee',em:'🧢',cat:'야구',name:'이정후 KBO 시즌 안타 수',say:'이정후 선수의 연도별 안타 수',label:'안타 수',unit:'개',xu:'년',x:['2017','2018','2019','2020','2021','2022'],v:[179,163,193,181,167,193],base:150,step:1,src:'KBO 공식 기록 (키움 히어로즈 시절)',decoy:['이정후 홈런 수','이정후 도루 수'],q:WAVE},
+{id:'rbu',em:'🎮',cat:'게임',name:'로블록스 하루 평균 이용자 수',say:'로블록스의 연도별 하루 이용자 수',label:'이용자 수',unit:'백만 명',xu:'년',x:['2020','2021','2022','2023','2024'],v:[33,46,56,68,83],base:0,step:1,src:'Roblox 연례 보고서 (전 세계, 백만 명 아래는 반올림)',decoy:['마인크래프트 이용자 수','로블록스 게임 개수'],q:{t:'2024년 로블록스 하루 이용자 약 8300만 명을 우리나라 인구(약 5100만 명)와 비교하면?',o:['우리나라 인구보다 적다','우리나라 인구와 똑같다','우리나라 인구보다 많다','비교할 수 없다'],a:2,e:'8300만은 5100만보다 커요. 하루에 우리나라 사람 수보다 많은 사람이 로블록스를 해요!'}},
+{id:'rbm',em:'💰',cat:'게임',name:'로블록스 회사의 1년 매출',say:'로블록스 회사가 해마다 번 돈',label:'매출',unit:'억 달러',xu:'년',x:['2019','2020','2021','2022','2023','2024'],v:[4,9,19,22,28,36],base:0,step:1,src:'Roblox 실적 발표 (억 달러 아래는 반올림)',decoy:['로블록스 직원 수','로블록스 게임 개수'],q:{t:'2019년부터 2024년까지 매출은 약 몇 배가 되었나요?',o:['약 2배','약 4배','약 9배','약 36배'],a:2,e:'4억 달러 → 36억 달러, 36 ÷ 4 = 9. 약 9배가 되었어요.'}},
+{id:'wage',em:'🪙',cat:'생활',name:'최저임금 (1시간)',say:'연도별 최저임금',label:'최저임금',unit:'원',xu:'년',x:['2021','2022','2023','2024','2025','2026'],v:[8720,9160,9620,9860,10030,10320],base:8500,step:10,src:'최저임금위원회 고시',decoy:['서울 짜장면 가격','버스 요금'],q:{t:'최저임금이 처음으로 1만 원을 넘은 해는?',o:['2023년','2024년','2025년','2026년'],a:2,e:'2025년에 10,030원이 되면서 처음 1만 원을 넘었어요.'}},
+{id:'kids',em:'🎒',cat:'학교',name:'전국 초등학생 수',say:'전국의 연도별 초등학생 수',label:'초등학생 수',unit:'만 명',xu:'년',x:['2021','2022','2023','2024','2025'],v:[267,266,260,249,235],base:230,step:1,src:'교육부·한국교육개발원 교육기본통계 (만 명 아래는 반올림)',decoy:['전국 중학생 수','전국 선생님 수'],q:{t:'초등학생 수가 계속 줄어드는 가장 큰 까닭은?',o:['학교가 많아져서','태어나는 아기가 줄어서','방학이 길어져서','키가 커져서'],a:1,e:'몇 년 전부터 태어나는 아기 수가 줄어서, 학교에 들어오는 학생도 줄고 있어요.'}},
+{id:'baby',em:'👶',cat:'생활',name:'우리나라 출생아 수',say:'연도별로 태어난 아기 수',label:'출생아 수',unit:'천 명',xu:'년',x:['2019','2020','2021','2022','2023','2024'],v:[303,272,261,249,230,238],base:220,step:1,src:'통계청 인구동향 (천 명 아래는 반올림)',decoy:['우리나라 결혼 건수','우리나라 이사 건수'],q:{t:'2024년 출생아 수는 2023년과 비교해 어떻게 되었나요?',o:['더 줄었다','똑같다','다시 늘었다','알 수 없다'],a:2,e:'230천 명 → 238천 명. 선이 오른쪽 위로 올라가요. 오랜만에 다시 늘었어요!'}}
+];
+D.push(
+{id:'co2',em:'🌍',cat:'',name:'공기 속 이산화탄소 농도',say:'연도별 공기 속 이산화탄소 양',label:'이산화탄소 농도',unit:'ppm',xu:'년',x:['2019','2020','2021','2022','2023','2024'],v:[412,414,416,419,421,425],base:400,step:1,src:'미국 해양대기청(NOAA) 마우나로아 관측소 연평균 (반올림, ppm은 공기 알갱이 100만 개 중 개수)',decoy:['공기 속 산소 농도','미세먼지 농도'],q:{t:'이산화탄소가 계속 늘어나면 어떤 일이 생길까요?',o:['지구가 점점 더워진다','지구가 점점 추워진다','바다가 사라진다','아무 일도 없다'],a:0,e:'이산화탄소 같은 온실가스가 늘면 지구 온도가 올라가요. 그래서 폭염도 늘고 있어요.'}},
+{id:'ev',em:'🔌',cat:'',name:'전기차 누적 등록 대수',say:'연도별 우리나라 전기차 수',label:'전기차 수',unit:'천 대',xu:'년',x:['2020','2021','2022','2023'],v:[135,231,390,544],base:0,step:1,src:'국토교통부 자동차 등록 통계 (천 대 아래는 반올림)',decoy:['수소차 등록 대수','전체 자동차 등록 대수'],q:{t:'전기차가 늘어나면 좋은 점은?',o:['달릴 때 배기가스가 나오지 않는다','기름을 더 많이 쓴다','소리가 더 커진다','차가 더 무거워진다'],a:0,e:'전기차는 달릴 때 배기가스가 나오지 않아서 공기를 덜 더럽혀요.'}},
+{id:'olym',em:'🥇',cat:'',name:'하계 올림픽 한국 금메달 수',say:'올림픽마다 우리나라 금메달 수',label:'금메달 수',unit:'개',xu:'년',x:['2008','2012','2016','2020','2024'],v:[13,13,9,6,13],base:0,step:1,src:'IOC·대한체육회 기록 (2020 도쿄 대회는 코로나19로 2021년에 열림)',decoy:['동계 올림픽 금메달 수','올림픽 전체 메달 수'],q:{t:'2024년 하계 올림픽이 열린 도시는?',o:['도쿄','파리','런던','베이징'],a:1,e:'2024년 하계 올림픽은 프랑스 파리에서 열렸어요.'}},
+{id:'kpop',em:'🎤',cat:'',name:'K팝 앨범 판매량',say:'연도별 K팝 앨범 판매량',label:'앨범 판매량',unit:'백만 장',xu:'년',x:['2019','2020','2021','2022','2023'],v:[25,42,57,74,115],base:0,step:1,src:'써클차트 상위 400위 앨범 합계 (2022·2023년은 50주차까지, 백만 장 아래 반올림)',decoy:['K팝 음원 다운로드 수','K팝 콘서트 관객 수'],q:{t:'2023년 K팝 앨범 판매량은 2019년의 약 몇 배일까요?',o:['약 2배','약 3배','약 5배','약 10배'],a:2,e:'115 ÷ 25 = 4.6, 약 5배예요. 아이돌 팬덤이 크게 늘었어요!'}},
+{id:'ramen',em:'🍜',cat:'',name:'한국 라면 수출액',say:'연도별 K라면 수출액',label:'수출액',unit:'백만 달러',xu:'년',x:['2020','2021','2022','2023','2024','2025'],v:[604,674,765,952,1248,1521],base:0,step:1,src:'관세청·농림축산식품부 (백만 달러 아래는 반올림)',decoy:['김치 수출액','과자 수출액'],q:{t:'2025년 우리 라면을 가장 많이 사 간 나라는?',o:['미국','일본','중국','영국'],a:2,e:'2025년에는 중국으로 간 라면이 약 3억 8500만 달러어치로 가장 많았어요. 미국이 그다음이에요.'}},
+{id:'kfood',em:'🥟',cat:'',name:'K푸드(농식품) 수출액',say:'연도별 K푸드 수출액',label:'수출액',unit:'억 달러',xu:'년',x:['2019','2020','2021','2022','2023','2024','2025'],v:[70,76,86,89,92,100,104],base:60,step:1,src:'농림축산식품부 (억 달러 아래는 반올림)',decoy:['반도체 수출액','자동차 수출액'],q:WAVE},
+{id:'movie',em:'🎬',cat:'',name:'영화관 관객 수',say:'연도별 영화관 관객 수',label:'관객 수',unit:'백만 명',xu:'년',x:['2019','2020','2021','2022','2023','2024'],v:[227,60,61,113,125,123],base:0,step:1,src:'영화진흥위원회 한국 영화산업 결산 (백만 명 아래는 반올림)',decoy:['영화관 개수','개봉 영화 편수'],q:{t:'2022년 이후에도 관객이 2019년만큼 돌아오지 않은 까닭으로 알맞은 것은?',o:['집에서 OTT(넷플릭스 등)로 영화를 보는 사람이 늘어서','영화가 하나도 안 나와서','영화관이 모두 문을 닫아서','표가 공짜라서'],a:0,e:'코로나19 뒤로 집에서 OTT로 영화를 보는 사람이 많아졌어요.'}},
+{id:'tour',em:'✈️',cat:'',name:'우리나라를 찾은 외국인 관광객 수',say:'연도별 우리나라에 놀러 온 외국인 수',label:'관광객 수',unit:'만 명',xu:'년',x:['2019','2020','2021','2022','2023','2024'],v:[1750,252,97,320,1103,1637],base:0,step:1,src:'한국관광공사 한국관광통계 (만 명 아래는 반올림)',decoy:['해외로 나간 우리 국민 수','외국인 유학생 수'],q:{t:'2021년에 관광객이 가장 적었던 까닭은?',o:['코로나19로 나라 사이 여행이 막혀서','우리나라에 공항이 없어서','날씨가 너무 더워서','관광지가 모두 사라져서'],a:0,e:'코로나19 때문에 여러 나라가 여행을 막아서 관광객이 크게 줄었어요.'}},
+{id:'fore',em:'🌏',cat:'',name:'우리나라에 사는 외국인 수',say:'연도별 우리나라에 사는 외국인 수',label:'체류 외국인 수',unit:'만 명',xu:'년',x:['2019','2020','2021','2022','2023','2024','2025'],v:[252,204,196,225,251,265,278],base:180,step:1,src:'법무부 출입국·외국인정책 통계 (만 명 아래는 반올림)',decoy:['외국인 관광객 수','외국인 유학생 수'],q:{t:'우리나라에 사는 외국인 중 가장 많은 나라 사람은?',o:['미국','베트남','중국','태국'],a:2,e:'중국 국적이 약 98만 명으로 가장 많고, 그다음은 베트남이에요.'}},
+{id:'out',em:'🧳',cat:'',name:'해외로 나간 우리 국민 수',say:'연도별 해외로 나간 우리나라 사람 수',label:'출국자 수',unit:'만 명',xu:'년',x:['2021','2022','2023','2024','2025'],v:[123,658,2276,2872,2958],base:0,step:1,src:'법무부 출입국 통계 (국민 출국자, 만 명 아래는 반올림)',decoy:['외국인 관광객 수','국내 여행자 수'],q:{t:'2022년 → 2023년에 출국자가 확 늘어난 까닭으로 알맞은 것은?',o:['코로나19가 잦아들어 여행 제한이 풀려서','비행기 표가 모두 공짜가 되어서','외국이 더 가까워져서','방학이 없어져서'],a:0,e:'코로나19가 잦아들고 여행 제한이 풀리면서 해외여행이 다시 크게 늘었어요.'}}
+);
+const CATS={dust:'날씨·기후',heat:'날씨·기후',co2:'날씨·기후',ev:'날씨·기후',ohtani:'스포츠',son:'스포츠',lg:'스포츠',kbo:'스포츠',lee:'스포츠',olym:'스포츠',rbu:'게임',rbm:'게임',kpop:'K팝·K컬처',ramen:'K팝·K컬처',kfood:'K팝·K컬처',movie:'K팝·K컬처',tour:'외국인·여행',fore:'외국인·여행',out:'외국인·여행',wage:'생활·사회',kids:'생활·사회',baby:'생활·사회'};
+D.forEach(d=>d.cat=CATS[d.id]||d.cat);
+const FIX={
+ kbo:{x:['2022','2023','2024','2025'],v:[6,8,11,12],unit:'백만 명',q:{t:'프로야구 관중이 처음으로 넘은 1000만 명! 그게 몇 년일까요?',o:['2022년','2023년','2024년','2025년'],a:2,e:'2024년에 약 1088만 명이 와서 처음으로 1000만 관중을 넘었어요.'}},
+ rbu:{base:30},
+ wage:{v:[87,92,96,99,100,103],unit:'백 원',base:80,q:{t:'최저임금이 처음으로 1만 원(100백 원)을 넘은 해는?',o:['2023년','2024년','2025년','2026년'],a:2,e:'2025년에 10,030원이 되면서 처음 1만 원을 넘었어요.'}},
+ baby:{v:[30,27,26,25,23,24],unit:'만 명',base:20,q:{t:'2024년 출생아 수는 2023년과 비교해 어떻게 되었나요?',o:['더 줄었다','똑같다','다시 늘었다','알 수 없다'],a:2,e:'23만 명 → 24만 명. 선이 오른쪽 위로 올라가요. 오랜만에 다시 늘었어요!'}},
+ ev:{v:[13,23,39,54],unit:'만 대'},
+ kpop:{v:[2,4,6,7,12],unit:'천만 장',q:{t:'2023년 K팝 앨범 판매량(약 1억 2천만 장)과 우리나라 인구(약 5100만 명)를 비교하면?',o:['인구보다 적다','인구와 같다','인구보다 2배 넘게 많다','비교할 수 없다'],a:2,e:'1억 2천만은 5100만의 2배보다 커요. 팬들이 앨범을 정말 많이 샀어요!'}},
+ ramen:{v:[6,7,8,10,12,15],unit:'억 달러'},
+ movie:{v:[23,6,6,11,13,12],unit:'천만 명'},
+ tour:{v:[18,3,1,3,11,16],unit:'백만 명'},
+ fore:{v:[25,20,20,23,25,27,28],unit:'십만 명',base:15},
+ out:{v:[1,7,23,29,30],unit:'백만 명'}
+};
+D.forEach(d=>{const f=FIX[d.id];if(f){Object.assign(d,f);if(f.v)d.src+=' · 단위에 맞게 어림한 값'}});
+const CL=['전체','날씨·기후','스포츠','게임','K팝·K컬처','외국인·여행','생활·사회'];
+let homeCat='전체';
+const ST=[['🍦','아이스크림',0],['🍩','도넛',0],['🐣','병아리',0],['🌈','무지개',0],['⚾','야구공',0],['🎈','풍선',0],['🍕','피자',0],['🐸','개구리',0],['🍉','수박',0],['🐶','강아지',0],['🍓','딸기',0],['🐱','고양이',0],['🚀','로켓',1],['🦄','유니콘',1],['🦖','공룡',1],['🐬','돌고래',1],['🎮','게임기',1],['🏆','트로피',1],['🐼','판다',1],['🧁','컵케이크',1],['👑','왕관',2],['💎','다이아몬드',2],['🐉','용',2],['🌌','은하수',2]];
+const RN=['일반','희귀','전설'];
+const LV=[[0,'꺾은선 새싹'],[150,'그래프 탐험가'],[400,'자료 수집왕'],[800,'통계 박사'],[1500,'꺾은선 마스터']];
+const SN=['주제 정하기','자료 수집하기','자료 정리하기','꺾은선그래프','내용 알아보기','보상 뽑기'];
+const SC=[1,2,5,10,20,50,100,200,500,1000];
+let save={total:0,st:{},best:{},gal:[]};
+try{const s=JSON.parse(localStorage.getItem('lgg1')||'null');if(s)save=Object.assign(save,s)}catch(e){}
+if(!Array.isArray(save.gal))save.gal=[];
+const persist=()=>{try{localStorage.setItem('lgg1',JSON.stringify(save))}catch(e){}};
+let S=null,lastStep=-1;
+const $=s=>document.querySelector(s);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const josa=(w,a,b)=>{const c=w.charCodeAt(w.length-1);return(c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28)?a:b};
+const ro=w=>{const c=w.charCodeAt(w.length-1),b=(c-0xAC00)%28;return(c>=0xAC00&&c<=0xD7A3&&b&&b!==8)?'으로':'로'};
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=n=>Number(n).toLocaleString('ko-KR');
+const yl=(d,i)=>d.x[i]+(d.xu==='년'?'년':' 시즌');
+const vu=(d,v)=>fmt(v)+d.unit;
+let ac=null;
+const beep=ok=>{try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.type='triangle';o.frequency.setValueAtTime(ok?660:200,t);if(ok)o.frequency.setValueAtTime(990,t+.09);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.3);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+.31)}catch(e){}};
+const confetti=()=>{if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const cs=['#ff5a4c','#17a998','#ffc21f','#4f8cff'];for(let i=0;i<40;i++){const c=document.createElement('i');c.className='cf';c.style.left=Math.random()*100+'vw';c.style.background=cs[i%4];c.style.animationDuration=(1.6+Math.random()*1.6)+'s';c.style.animationDelay=Math.random()*.4+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),3800)}};
+
+function cellsFor(d,m){return Math.ceil((Math.max(...d.v)-d.base)/m)}
+function validS(d,m){const c=cellsFor(d,m);return c>=8&&c<=30}
+const snapOf=(d,m)=>Math.max(d.step,Math.floor(m/2/d.step)*d.step);
+const GW=900,GH=600,GL=84,GR=24,GB=50;
+
+function makeQuiz(d){
+  const v=d.v,n=v.length,L=d.label,u=d.unit,Y=i=>yl(d,i),all=[...Array(n).keys()];
+  const mk=(t,right,pool,e)=>{const o=shuf([right,...shuf([...new Set(pool)].filter(p=>p!==right)).slice(0,3)]);return{t,o,a:o.indexOf(right),e}};
+  const c=[],mx=Math.max(...v),mn=Math.min(...v),j=josa(L,'이','가'),jn=josa(L,'은','는');
+  if(v.filter(a=>a===mx).length===1){const i=v.indexOf(mx);c.push(mk(`${L}${j} 가장 많은 때는 언제인가요?`,Y(i),all.map(Y),`점이 가장 높은 곳이 ${Y(i)}이에요. (${vu(d,mx)})`))}
+  if(v.filter(a=>a===mn).length===1){const i=v.indexOf(mn);c.push(mk(`${L}${j} 가장 적은 때는 언제인가요?`,Y(i),all.map(Y),`점이 가장 낮은 곳이 ${Y(i)}이에요. (${vu(d,mn)})`))}
+  const dd=v.slice(1).map((a,i)=>a-v[i]),I=i=>`${Y(i)} → ${Y(i+1)}`,iv=dd.map((_,i)=>I(i));
+  const up=Math.max(...dd),dn=Math.min(...dd);
+  if(up>0&&dd.filter(a=>a===up).length===1){const i=dd.indexOf(up);c.push(mk('바로 앞보다 가장 많이 늘어난 때는 언제인가요?',I(i),iv,`선이 가장 가파르게 올라간 곳이에요. ${vu(d,v[i])} → ${vu(d,v[i+1])} (${fmt(up)}${u} 늘었어요)`))}
+  if(dn<0&&dd.filter(a=>a===dn).length===1){const i=dd.indexOf(dn);c.push(mk('바로 앞보다 가장 많이 줄어든 때는 언제인가요?',I(i),iv,`선이 가장 가파르게 내려간 곳이에요. ${vu(d,v[i])} → ${vu(d,v[i+1])} (${fmt(-dn)}${u} 줄었어요)`))}
+  const uniq=shuf(all.filter(i=>v.filter(a=>a===v[i]).length===1));
+  let k=0;
+  while(c.length<4&&k<uniq.length){const i=uniq[k++];let pool=[...new Set(v)].filter(a=>a!==v[i]);const s=Math.max(d.step,Math.round(mx/20));while(pool.length<3)pool.push(v[i]+s*(pool.length+1));c.push(mk(`${Y(i)}의 ${L}${jn} 얼마인가요?`,vu(d,v[i]),pool.map(a=>vu(d,a)),`그래프에서 ${Y(i)} 위의 점을 세로 눈금에 맞춰 읽으면 ${vu(d,v[i])}예요.`))}
+  const list=shuf(c).slice(0,4);
+  const q=d.q===WAVE?{t:'이 그래프에 물결선(≈)을 넣은 까닭은?',o:['그래프를 예쁘게 꾸미려고','필요 없는 부분을 줄여서 변화가 잘 보이게 하려고','값이 0이라서','틀린 부분을 지우려고'],a:1,e:`0부터 ${fmt(d.base)}${u}까지는 점이 하나도 없어요. 물결선으로 줄이면 눈금을 촘촘하게 써서 변화가 크게 보여요.`}:d.q;
+  list.push(q);return list;
+}
+
+function start(i){
+  const d=D[i],n=d.v.length;
+  S={d,step:1,max:1,sc:[0,0,0,0],col:{tries:0,done:false,res:false},tab:{y:Array(n).fill(''),v:Array(n).fill(''),py:shuf(d.x.map((_,i)=>'y'+i)),pv:shuf(d.v.map((_,i)=>'v'+i)),sel:null,cls:[],fails:0,done:false},
+     gr:{s:null,rows:0,sScore:0,pts:Array(n).fill(null),ok:Array(n).fill(false),ptries:0,lined:false,title:'',hover:null},
+     qz:{list:makeQuiz(d),i:0,picked:null},res:{done:false,draws:0,last:null}};
+  render();
+}
+const phase=()=>{const g=S.gr;if(!g.s)return'scale';if(!g.ok.every(Boolean))return'pts';if(!g.lined)return'line';if(!g.title)return'title';return'done'};
+
+function chips(){
+  const lv=LV.filter(l=>save.total>=l[0]).pop()[1],own=ST.filter(s=>save.st[s[0]]).length;
+  $('#chips').innerHTML=`${S?'<button class="chip" data-act="home">🔄 주제 바꾸기</button>':''}<span class="chip">⭐ ${fmt(save.total)}점 · ${lv}</span><button class="chip" data-act="gal">🖼️ 내 그래프 ${save.gal.length}</button><button class="chip" data-act="album">🎁 스티커 ${own}/${ST.length}</button>`;
+  const cur=S?S.step:0;
+  $('#steps').innerHTML=SN.map((n,i)=>`<button data-act="go" data-s="${i}" class="${i===cur?'on':''} ${S&&i<S.max?'done':''}" ${(!S&&i>0)||(S&&i>S.max)||(S&&i===0)?'disabled':''}>${i<5?'❶❷❸❹❺'[i]+' ':'🎁 '}${n}</button>`).join('');
+}
+
+function portalTable(d){
+  const sorted=[...d.v].sort((a,b)=>b-a);
+  return `<table class="ptab"><thead><tr><th>${d.xu==='년'?'연도':'시즌'}</th><th>${esc(d.label)}(${esc(d.unit)})</th><th>순위</th></tr></thead><tbody>${d.v.map((v,i)=>`<tr><td>${yl(d,i)}</td><td class="n">${fmt(v)}</td><td>${sorted.indexOf(v)+1}</td></tr>`).join('')}</tbody></table><p class="src">출처: ${esc(d.src)}</p>`;
+}
+
+function vHome(){
+  return `<section class="board"><div class="ttl"><span class="tag">활동 ❶</span><h2>조사하고 싶은 주제를 골라 볼까요?</h2></div>
+  <p class="sub">${D.length}개 주제 중에서 골라요! 카드를 고르면 탐정 미션 시작! 자료 수집 → 표 → 꺾은선그래프 → 퀴즈를 다 풀면 점수와 랜덤 스티커를 받아요.</p>
+  <div class="row" style="margin-bottom:16px"><button class="big y" data-act="rand">🎲 아무 주제나 골라 줘!</button></div>
+  <div class="opts" style="margin-bottom:14px">${CL.map(c=>`<button class="opt ${c===homeCat?'ok':''}" data-act="cat" data-c="${c}">${c} <small>${c==='전체'?D.length:D.filter(d=>d.cat===c).length}</small></button>`).join('')}</div>
+  <div class="cards">${D.map((d,i)=>homeCat!=='전체'&&d.cat!==homeCat?'':`<button class="tc" data-act="pick" data-i="${i}"><span class="em">${d.em}</span><span class="cat">${d.cat}</span><b>${esc(d.name)}</b><small>${yl(d,0)} ~ ${yl(d,d.x.length-1)}</small>${save.best[d.id]!=null?`<span class="best">최고 ${save.best[d.id]}점</span>`:''}</button>`).join('')}</div></section>`;
+}
+
+function vCollect(){
+  const d=S.d,n=d.v.length,opts=S.col.opts||(S.col.opts=shuf([d.name,...d.decoy]));
+  const ys=d.x.map((x,i)=>`<option value="${i}">${x}</option>`).join('');
+  return `<section class="board"><div class="ttl"><span class="tag">❷ 자료 수집하기</span><h2>자료 포털에서 자료를 찾아요</h2></div>
+  <div class="bubble" data-em="${d.em}">난 ${esc(d.say)}${josa(d.say,'을','를')} 조사해 볼래.</div>
+  <div class="mission">🔎 미션: ‘${esc(d.name)}’ 자료를 고르고, 기간을 <u>${yl(d,0)}부터 ${yl(d,n-1)}까지</u>로 맞춘 뒤 검색하세요.</div>
+  <div class="portal"><div class="pbar"><span>📊 자료 탐험 포털 (연습용)</span><span>통계 › 연도별 자료</span></div><div class="pbody">
+   <div class="cond"><b>▪ 검색 조건</b>
+    <label>자료 <select id="cName">${opts.map(o=>`<option>${esc(o)}</option>`).join('')}</select></label>
+    <label>기간 <select id="cA">${ys}</select> ~ <select id="cB">${ys}</select></label>
+    <button class="big m" data-act="search" ${S.col.done?'disabled':''}>검색</button></div>
+   <p class="fb" id="fb"></p><div id="res">${S.col.done?`<h3>▪ ${esc(d.name)}</h3>${portalTable(d)}`:''}</div></div></div>
+  ${S.col.done?`<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="big" data-act="go" data-s="2">자료 정리하러 가기 →</button></div>`:''}</section>`;
+}
+
+const tTxt=id=>{const n=+id.slice(1);return id[0]==='y'?S.d.x[n]:fmt(S.d.v[n])};
+const tile=(id,from)=>`<span class="tile ${id[0]} ${S.tab.sel&&S.tab.sel.id===id?'sel':''}" data-k="${id[0]}" data-id="${id}" ${from!=null?`data-from="${from}"`:''}>${tTxt(id)}</span>`;
+function hTable(d,edit){
+  const t=S.tab,cell=(k,i)=>{const id=t[k][i],c=t.cls[i]?.[k==='y'?0:1]||'';return `<td><button class="slot ${c}" data-act="slot" data-k="${k}" data-i="${i}" aria-label="${i+1}번째 빈칸">${id?tile(id,i):'?'}</button></td>`};
+  return `<div class="cap">${esc(d.name)}</div><div class="scroll"><table class="htab"><tr><th>${d.xu==='년'?'연도(년)':'시즌'}</th>${d.v.map((_,i)=>edit?cell('y',i):`<td>${d.x[i]}</td>`).join('')}</tr>
+  <tr><th>${esc(d.label)}(${esc(d.unit)})</th>${d.v.map((v,i)=>edit?cell('v',i):`<td>${fmt(v)}</td>`).join('')}</tr></table></div>`;
+}
+function pools(){const t=S.tab,P=(k,lab)=>`<div class="pool" data-k="${k}"><span class="pl">${lab}</span>${t['p'+k].filter(id=>!t[k].includes(id)).map(id=>tile(id,null)).join('')||'<span class="hint">다 넣었어요! 👍</span>'}</div>`;return P('y',S.d.xu==='년'?'연도 카드':'시즌 카드')+P('v','값 카드')}
+function vTable(){
+  const d=S.d;
+  return `<section class="board"><div class="ttl"><span class="tag">❸ 자료 정리하기</span><h2>조사한 결과를 표로 나타내어 보세요</h2></div>
+  <div class="grid2"><div><h3>📋 수집한 자료</h3>${portalTable(d)}</div>
+  <div><p class="sub">왼쪽 자료를 보고 아래 <b>카드를 끌어다</b> 표의 빈칸에 넣어요. 첫 줄엔 ${d.xu==='년'?'연도':'시즌'}, 둘째 줄엔 ${esc(d.label)}! <span class="hint">(카드를 톡 누르고 빈칸을 눌러도 돼요. 빈칸의 카드를 누르면 다시 빠져요.)</span></p>
+  ${hTable(d,!S.tab.done)}${S.tab.done?'':pools()}
+  <p class="fb" id="fb">${S.tab.done?'🎉 표 완성! 이제 꺾은선그래프로 그려 봐요.':''}</p>
+  <div class="row" style="justify-content:flex-end">${S.tab.done?`<button class="big" data-act="go" data-s="3">꺾은선그래프 그리기 →</button>`:`<button class="big m" data-act="checkTab">표 확인하기</button>`}</div></div></div></section>`;
+}
+
+function svgInner(interactive,d,g){
+  d=d||S.d;g=g||S.gr;const n=d.v.length,W=GW,H=GH,L=GL,R=GR,T=g.title?60:38,B=GB,wav=d.base>0;
+  const pb=H-B-(wav?32:0),ph=pb-T,cw=(W-L-R)/n,m=g.s,rows=g.rows;
+  const yOf=v=>pb-(v-d.base)/(rows*m)*ph,xOf=i=>L+cw*(i+.5);
+  let o=`<rect x="${L}" y="${T}" width="${W-L-R}" height="${ph}" class="pa"/>`;
+  for(let k=0;k<=rows;k++){const val=d.base+k*m,y=yOf(val),maj=k%5===0;o+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" class="${maj?'gM':'gm'}"/>`;if(maj)o+=`<text x="${L-10}" y="${y+6}" class="yl">${fmt(val)}</text>`}
+  for(let i=0;i<n;i++)o+=`<line x1="${xOf(i)}" x2="${xOf(i)}" y1="${T}" y2="${pb}" class="gv"/><text x="${xOf(i)}" y="${H-16}" class="xl">${d.x[i]}</text>`;
+  o+=`<rect x="${L}" y="${T}" width="${W-L-R}" height="${ph}" class="fr"/>`;
+  if(wav){const q=pb+16;o+=`<path d="M${L} ${pb} L${L} ${q-9} L${L-8} ${q-4} L${L+8} ${q+1} L${L-8} ${q+6} L${L} ${q+10} L${L} ${H-B}" class="fr"/><text x="${L-14}" y="${H-B+6}" class="yl">0</text><line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" class="fr"/>`}
+  o+=`<text x="${L-10}" y="${T-14}" class="ul" text-anchor="end">(${esc(d.unit)})</text><text x="${W-R}" y="${H-2}" class="ul" text-anchor="end">(${d.xu})</text>`;
+  if(g.title)o+=`<text x="${(L+W-R)/2}" y="34" class="gt">${esc(g.title)}</text>`;
+  const p=g.pts.map((v,i)=>v==null?null:[xOf(i),yOf(v)]);
+  if(g.lined)o+=`<polyline class="ln" points="${p.map(a=>a.join(',')).join(' ')}"/>`;
+  if(interactive&&g.hover){const{i,v}=g.hover,x=xOf(i),y=yOf(v),lab=`${d.x[i]}: ${fmt(v)}`,bw=lab.length*10+22,bx=Math.min(x+14,W-R-bw);o+=`<line x1="${L}" x2="${x}" y1="${y}" y2="${y}" class="hv"/><circle cx="${x}" cy="${y}" r="9" fill="none" stroke="#ff5a4c" stroke-width="2.5"/><rect x="${bx}" y="${y-40}" width="${bw}" height="30" rx="9" fill="#ff5a4c"/><text x="${bx+11}" y="${y-19}" class="ro">${esc(lab)}</text>`}
+  p.forEach((a,i)=>{if(a)o+=`<circle cx="${a[0]}" cy="${a[1]}" r="8" class="pt ${g.chk?(g.ok[i]?'g':'b'):''}"/>`});
+  return o;
+}
+
+function vGraph(){
+  const d=S.d,g=S.gr,ph=phase(),mx=Math.max(...d.v);
+  const li=[['scale','① 세로 눈금 한 칸 정하기'],['pts','② 점 찍기'],['line','③ 선분으로 잇기'],['title','④ 제목 쓰기']];
+  const order=['scale','pts','line','title','done'];
+  let panel='';
+  if(ph==='scale'){
+    const op=[1,2];
+    panel=`<p style="margin:0 0 8px"><b>가장 큰 값은 ${vu(d,mx)}</b>예요.${d.base>0?` 0부터 ${vu(d,d.base)} 사이엔 값이 없어서 <b>물결선(≈)</b>으로 줄이고 ${fmt(d.base)}부터 시작해요.`:''}</p><p style="margin:0 0 10px">세로 눈금 한 칸은 몇 ${esc(d.unit)}${ro(d.unit)} 나타내면 좋을까요? <span class="hint">(굵은 선은 5칸마다 그어져요)</span></p><div class="opts">${op.map(m=>`<button class="opt" style="font-size:22px;padding:10px 26px" data-act="scale" data-v="${m}">${m}</button>`).join('')}</div>`;
+  }else if(ph==='pts'){
+    panel=`<div><p style="margin:0 0 10px">그래프를 눌러 <b>${d.xu==='년'?'연도':'시즌'}마다 점</b>을 찍어요. 움직이면 값이 보여요. 잘못 찍으면 다시 누르면 옮겨져요.</p><button class="big m" data-act="checkPts" ${g.pts.some(v=>v==null)?'disabled':''}>점 확인하기 (${g.pts.filter(v=>v!=null).length}/${g.pts.length})</button><div class="opts" style="margin-top:10px"><button class="opt" data-act="undoPt">↩ 마지막 점 지우기</button><button class="opt" data-act="clearPts">🧽 점 모두 지우기</button><button class="opt" data-act="reScale">📏 눈금 다시 정하기</button></div></div>`;
+  }else if(ph==='line'){
+    panel=`<div><p style="margin:0 0 10px">🎯 점을 모두 정확히 찍었어요! 이제 점들을 <b>선분으로 이어</b> 볼까요?</p><button class="big" data-act="line">✏️ 선분으로 잇기</button><div class="opts" style="margin-top:10px"><button class="opt" data-act="editPts">← 점 고치기</button></div></div>`;
+  }else if(ph==='title'){
+    panel=`<p style="margin:0 0 8px">마지막! 그래프에 <b>제목</b>을 붙여요. <span class="hint">예: ${esc(d.name)}</span></p><div class="row"><input type="text" id="gTitle" maxlength="30" placeholder="그래프 제목" value="${esc(g.prevTitle||'')}" style="flex:1"><button class="big m" data-act="title">확인</button></div><div class="opts" style="margin-top:10px"><button class="opt" data-act="editPts">← 점 고치기</button></div>`;
+  }else panel=`<div><p style="margin:0 0 10px">🎉 꺾은선그래프 완성! 이제 그래프를 보고 알 수 있는 내용을 찾아봐요.</p><button class="big" data-act="go" data-s="4">내용 알아보기 퀴즈 →</button><div class="opts" style="margin-top:10px"><button class="opt" data-act="editTitle">✏️ 제목 고치기</button><button class="opt" data-act="editPts">← 점 고치기</button></div></div>`;
+  return `<section class="board"><div class="ttl"><span class="tag">❸ 자료 정리하기</span><h2>표를 꺾은선그래프로 나타내어 보세요</h2></div>
+  <div class="grid2"><div><ul class="todo">${li.map(([k,t])=>`<li class="${k===ph?'now':order.indexOf(k)<order.indexOf(ph)?'fin':''}">${t}</li>`).join('')}</ul>
+  <div class="gpanel">${panel}<p class="fb" id="fb"></p></div></div>
+  <div>${hTable(d,false)}
+  <div class="fig" style="margin-top:12px">${g.s?`<svg id="gsvg" viewBox="0 0 ${GW} ${GH}" role="img" aria-label="꺾은선그래프 판">${svgInner(true)}</svg>`:'<div class="ph">세로 눈금 한 칸을 정하면<br>모눈 그래프 판이 나타나요!</div>'}</div></div></div></section>`;
+}
+
+function vQuiz(){
+  const d=S.d,z=S.qz,q=z.list[z.i],p=z.picked;
+  return `<section class="board"><div class="ttl"><span class="tag">❹ 내용 알아보기</span><h2>꺾은선그래프를 보고 알 수 있는 내용은?</h2></div>
+  <div class="grid2"><div class="qcard"><div class="qn">문제 ${z.i+1} / ${z.list.length} · 맞히면 +8점</div><div class="qt">${esc(q.t)}</div>
+   <div class="opts" style="flex-direction:column">${q.o.map((o,i)=>`<button class="opt ${p!=null?(i===q.a?'ok':i===p?'bad':''):''}" data-act="ans" data-i="${i}" ${p!=null?'disabled':''}>${'①②③④'[i]} ${esc(o)}</button>`).join('')}</div>
+   ${p!=null?`<p class="fb ${p===q.a?'ok':'bad'}">${p===q.a?'⭕ 정답!':'❌ 아쉬워요!'} ${esc(q.e)}</p><div class="row" style="justify-content:flex-end"><button class="big" data-act="nextQ">${z.i<z.list.length-1?'다음 문제 →':'결과 보기 🎁'}</button></div>`:''}</div>
+  <div class="fig"><svg viewBox="0 0 ${GW} ${GH}" role="img" aria-label="완성한 꺾은선그래프">${svgInner(false)}</svg></div></div></section>`;
+}
+
+function vResult(){
+  const d=S.d,t=S.sc.reduce((a,b)=>a+b,0),r=S.res;
+  if(!r.done){r.done=true;r.draws=t>=90?3:t>=70?2:1;save.total+=t;save.best[d.id]=Math.max(save.best[d.id]||0,t);save.gal.unshift({id:d.id,title:S.gr.title,s:S.gr.s,rows:S.gr.rows,pts:S.gr.pts.slice(),score:t,at:Date.now()});save.gal=save.gal.slice(0,60);chips();persist();setTimeout(confetti,50)}
+  const msg=t>=90?'완벽한 통계 탐정이에요! 🕵️':t>=70?'아주 잘했어요! 👍':t>=50?'좋아요! 다음엔 더 잘할 수 있어요 💪':'끝까지 해낸 것도 대단해요! 🌱';
+  const parts=[['자료 수집',S.sc[0],10],['표 만들기',S.sc[1],20],['꺾은선그래프',S.sc[2],30],['퀴즈',S.sc[3],40]];
+  const pr=r.last;
+  return `<section class="board"><div class="ttl"><span class="tag">🎁 결과</span><h2>${esc(d.name)} 미션 완료!</h2></div>
+  <div class="score">${t}점</div><p style="text-align:center;font-weight:900;font-size:20px;margin:6px 0">${msg}</p>
+  <div class="bars">${parts.map(([n,v,m])=>`<div class="bar"><span>${n}</span><span class="tr"><i style="width:${v/m*100}%"></i></span><b>${v}/${m}</b></div>`).join('')}</div>
+  <div class="gacha"><p class="jua" style="font-size:22px">랜덤 보상 뽑기 남은 횟수: ${r.draws}번 <span class="hint">(90점↑ 3번 · 70점↑ 2번)</span></p>
+   <div id="gbox">${pr?`<div class="prize r${pr[2]}"><span class="e">${pr[0]}</span><b>${pr[1]}</b><span class="rk r${pr[2]}">${RN[pr[2]]}</span><span>${pr.isNew?'✨ 새 스티커!':'갖고 있는 스티커 (×'+save.st[pr[0]]+')'}</span></div>`:'<span class="cap2" id="capsule">🎁</span>'}</div>
+   <div class="row" style="justify-content:center;margin-top:14px">${r.draws>0?`<button class="big y" data-act="draw" id="drawBtn">🎰 뽑기!</button>`:''}<button class="big m" data-act="gal">🖼️ 내 그래프 모음</button><button class="big m" data-act="album">📒 스티커 앨범</button><button class="big" data-act="home">🔎 새 주제 도전하기</button></div></div></section>`;
+}
+
+function render(){
+  chips();
+  const app=$('#app');
+  if(!S||S.step===0){app.innerHTML=vHome();return}
+  app.innerHTML=[null,vCollect,vTable,vGraph,vQuiz,vResult][S.step]();
+  if(S.step===1&&!S.col.done){$('#cA').value=String(S.d.v.length-1);$('#cB').value='0'}
+  const svg=$('#gsvg');
+  if(svg&&S.step===3)bindSvg(svg);
+  const cur=S?S.step:0;if(cur!==lastStep){lastStep=cur;window.scrollTo({top:0,behavior:'instant'})}
+}
+
+function bindSvg(svg){
+  const d=S.d,g=S.gr,n=d.v.length,W=GW,H=GH,L=GL,R=GR,B=GB,wav=d.base>0;
+  const geo=()=>{const T=g.title?60:38,pb=H-B-(wav?32:0);return{T,pb,ph:pb-T,cw:(W-L-R)/n}};
+  const at=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse()),G=geo();
+    if(p.x<L||p.x>W-R||p.y<G.T-12||p.y>G.pb+12)return null;
+    const i=Math.min(n-1,Math.max(0,Math.floor((p.x-L)/G.cw))),sn=snapOf(d,g.s),top=g.rows*g.s;
+    let raw=(G.pb-p.y)/G.ph*top;raw=Math.max(0,Math.min(top,raw));return{i,v:d.base+Math.round(raw/sn)*sn}};
+  const redraw=()=>{svg.innerHTML=svgInner(true)};
+  svg.addEventListener('pointermove',e=>{if(phase()!=='pts'){if(g.hover){g.hover=null;redraw()}return}g.hover=at(e);redraw()});
+  svg.addEventListener('pointerleave',()=>{g.hover=null;redraw()});
+  svg.addEventListener('pointerdown',e=>{if(phase()!=='pts')return;const h=at(e);if(!h||g.ok[h.i])return;g.pts[h.i]=h.v;(g.hist=g.hist||[]).push(h.i);g.chk=false;g.hover=h;beep(true);redraw();
+    const b=document.querySelector('[data-act=checkPts]');if(b){const c=g.pts.filter(v=>v!=null).length;b.disabled=c<n;b.textContent=`점 확인하기 (${c}/${n})`}});
+}
+
+function fb(t,ok){const f=$('#fb');if(f){f.textContent=t;f.className='fb '+(ok?'ok':'bad')}beep(ok)}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='gTitle')act('title');if(e.key==='Escape')$('#ov').classList.remove('on')});
+document.addEventListener('click',e=>{if(noClick){noClick=false;return}if(e.target.id==='ov'){$('#ov').classList.remove('on');return}const t=e.target.closest('[data-act]');if(t&&!t.disabled)act(t.dataset.act,t)});
+
+function act(a,t){
+  const d=S&&S.d;
+  if(a==='pick')start(+t.dataset.i);
+  else if(a==='cat'){homeCat=t.dataset.c;render()}
+  else if(a==='rand')start(Math.random()*D.length|0);
+  else if(a==='home'){S=null;render()}
+  else if(a==='go'){const s=+t.dataset.s;if(S&&s>=1&&s<=S.max){S.step=s;render()}else if(S&&s===S.max+1){}}
+  else if(a==='album')album();
+  else if(a==='closeOv')$('#ov').classList.remove('on');
+  else if(a==='search'){
+    const nm=$('#cName').value,A=+$('#cA').value,Bv=+$('#cB').value;S.col.tries++;
+    if(nm!==d.name)return fb(`‘${nm}’은(는) 이번 주제가 아니에요. 미션의 자료 이름을 다시 봐요!`,false);
+    if(A!==0||Bv!==d.v.length-1)return fb(`기간이 달라요. ${yl(d,0)}부터 ${yl(d,d.v.length-1)}까지로 맞춰요.`,false);
+    S.col.done=true;S.sc[0]=S.col.tries===1?10:S.col.tries===2?7:5;S.max=Math.max(S.max,2);render();fb(`검색 성공! +${S.sc[0]}점 · 아래 자료를 확인해요.`,true);
+  }
+  else if(a==='checkTab'){
+    const tb=S.tab;if(tb.y.some(x=>!x)||tb.v.some(x=>!x))return fb('아직 빈칸이 있어요. 카드를 모두 넣어 봐요!',false);
+    let bad=0;tb.cls=d.v.map((v,i)=>{const yOk=tTxt(tb.y[i])===d.x[i],vOk=tTxt(tb.v[i])===fmt(v);bad+=(!yOk)+(!vOk);return[yOk?'ok':'bad',vOk?'ok':'bad']});
+    if(bad===0){tb.done=true;S.sc[1]=Math.max(8,20-4*tb.fails);S.max=Math.max(S.max,3);render();fb(`🎉 표 완성! +${S.sc[1]}점`,true)}
+    else{tb.fails++;render();fb(`빨간 칸 ${bad}개가 틀렸어요. 왼쪽 자료와 순서를 비교해 봐요!`,false)}
+  }
+  else if(a==='slot'){
+    const k=t.dataset.k,i=+t.dataset.i,tb=S.tab;
+    if(tb.sel&&tb.sel.k===k)place(k,i,tb.sel.id,null);else if(tb[k][i]){tb[k][i]='';clr(k,i)}else if(tb.sel)return fb(k==='y'?'이 줄은 연도 칸이에요!':'이 줄은 값 칸이에요!',false);
+    render();
+  }
+  else if(a==='scale'){
+    const m=+t.dataset.v,g=S.gr,c=cellsFor(d,m);
+    if(validS(d,m)){g.s=m;g.rows=Math.ceil(c/5)*5;g.sScore=g.sScore||10;render();fb(`좋아요! 세로 눈금 한 칸 = ${fmt(m)}${d.unit} (+${g.sScore}점)`,true)}
+    else{g.sScore=5;fb(c>30?`한 칸을 ${fmt(m)}${d.unit}${ro(d.unit)} 하면 ${c}칸이나 필요해서 그래프가 너무 길어져요! 한 칸을 더 크게 해 봐요.`:`한 칸을 ${fmt(m)}${d.unit}${ro(d.unit)} 하면 ${c}칸밖에 안 써서 그래프가 납작해져요. 한 칸을 더 작게 해 봐요.`,false)}
+  }
+  else if(a==='checkPts'){
+    const g=S.gr,tol=snapOf(d,g.s);g.chk=true;
+    g.ok=g.pts.map((v,i)=>v!=null&&Math.abs(v-d.v[i])<=tol);const wrong=g.ok.map((o,i)=>o?null:d.x[i]).filter(Boolean);
+    if(!wrong.length){render();fb('모든 점 정답! 🎯',true)}
+    else{g.ptries++;$('#gsvg').innerHTML=svgInner(true);fb(`${wrong.join(', ')} 점을 다시 찍어요. 표의 값과 세로 눈금을 비교해 봐요!`,false);const b=document.querySelector('[data-act=checkPts]');if(b)b.textContent='점 확인하기'}
+    if(!wrong.length)g.pScore=Math.max(6,15-3*g.ptries);
+  }
+  else if(a==='line'){S.gr.lined=true;render();beep(true)}
+  else if(a==='undoPt'){const g=S.gr,h=g.hist||[];let i;while(h.length){i=h.pop();if(g.pts[i]!=null&&!g.ok[i]){g.pts[i]=null;g.chk=false;break}i=null}if(i==null)fb('지울 점이 없어요. (맞은 점은 그대로 있어요)',false);else render()}
+  else if(a==='clearPts'){const g=S.gr;g.pts=g.pts.map(()=>null);g.ok=g.ok.map(()=>false);g.chk=false;g.hist=[];render()}
+  else if(a==='reScale'){const g=S.gr;g.s=null;g.rows=0;g.pts=g.pts.map(()=>null);g.ok=g.ok.map(()=>false);g.chk=false;g.hist=[];render()}
+  else if(a==='editPts'){const g=S.gr;if(g.title){g.prevTitle=g.title;g.title=''}g.lined=false;g.ok=g.ok.map(()=>false);g.chk=false;render();fb('점을 눌러서 옮길 수 있어요. 다 고치면 다시 확인해요!',true)}
+  else if(a==='editTitle'){const g=S.gr;g.prevTitle=g.title;g.title='';render()}
+  else if(a==='gal')gallery();
+  else if(a==='viewG')gallery(+t.dataset.i);
+  else if(a==='delG'){save.gal.splice(+t.dataset.i,1);persist();chips();gallery()}
+  else if(a==='title'){
+    const v=($('#gTitle').value||'').trim();if(v.length<2)return fb('제목을 써 주세요! (예: '+d.name+')',false);
+    const g=S.gr;g.title=v;S.sc[2]=g.sScore+g.pScore+5;S.max=Math.max(S.max,4);render();fb(`그래프 완성! +${S.sc[2]}점`,true);confetti();
+  }
+  else if(a==='ans'){const z=S.qz,q=z.list[z.i];z.picked=+t.dataset.i;if(z.picked===q.a)S.sc[3]+=8;beep(z.picked===q.a);render()}
+  else if(a==='nextQ'){const z=S.qz;if(z.i<z.list.length-1){z.i++;z.picked=null}else{S.max=5;S.step=5}render()}
+  else if(a==='draw'){
+    const r=S.res;if(r.draws<=0)return;t.disabled=true;
+    const box=$('#gbox');box.innerHTML='<span class="cap2 shake">🎁</span>';
+    setTimeout(()=>{const roll=Math.random(),tier=roll<.06?2:roll<.34?1:0,pool=ST.filter(s=>s[2]===tier),p=pool[Math.random()*pool.length|0].slice();
+      p.isNew=!save.st[p[0]];save.st[p[0]]=(save.st[p[0]]||0)+1;persist();r.draws--;r.last=p;render();beep(true);if(tier>0||p.isNew)confetti()},matchMedia('(prefers-reduced-motion: reduce)').matches?50:900);
+  }
+}
+
+function clr(k,i){const c=S.tab.cls[i];if(c)c[k==='y'?0:1]=''}
+function place(k,i,id,from){const a=S.tab[k],prev=a[i],j=a.indexOf(id);if(j>=0)a[j]='';a[i]=id;if(from!=null&&+from!==i&&prev)a[+from]=prev;clr(k,i);if(from!=null)clr(k,+from);S.tab.sel=null;beep(true)}
+let drag=null,noClick=false;
+document.addEventListener('pointerdown',e=>{const t=e.target.closest('.tile');if(!t||!S||S.step!==2||S.tab.done)return;e.preventDefault();drag={t,k:t.dataset.k,id:t.dataset.id,from:t.dataset.from??null,x:e.clientX,y:e.clientY,g:null,over:null}});
+document.addEventListener('pointermove',e=>{if(!drag)return;if(!drag.g){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;const g=drag.t.cloneNode(true);g.classList.add('ghost');document.body.appendChild(g);drag.g=g;drag.t.classList.add('lift')}
+  drag.g.style.left=e.clientX+'px';drag.g.style.top=e.clientY+'px';const el=document.elementFromPoint(e.clientX,e.clientY),sl=el&&el.closest('.slot,.pool');
+  if(drag.over&&drag.over!==sl)drag.over.classList.remove('over');if(sl&&sl.dataset.k===drag.k){sl.classList.add('over');drag.over=sl}else drag.over=null});
+document.addEventListener('pointerup',()=>{if(!drag)return;const d0=drag;drag=null;
+  if(d0.g){d0.g.remove();noClick=true;setTimeout(()=>noClick=false,80);const sl=d0.over;if(sl){if(sl.classList.contains('slot'))place(d0.k,+sl.dataset.i,d0.id,d0.from);else if(d0.from!=null){S.tab[d0.k][+d0.from]='';clr(d0.k,+d0.from)}}render();return}
+  if(d0.from==null){S.tab.sel=S.tab.sel&&S.tab.sel.id===d0.id?null:{k:d0.k,id:d0.id};render()}});
+document.addEventListener('pointercancel',()=>{if(drag&&drag.g)drag.g.remove();drag=null;render()});
+function gallery(one){
+  const G=save.gal,ov=$('#ovb'),gs=e=>{const d=D.find(x=>x.id===e.id);return d?{d,g:{s:e.s,rows:e.rows,pts:e.pts,title:e.title,lined:true,ok:e.pts.map(()=>true),chk:false}}:null};
+  const dt=t=>{const x=new Date(t);return `${x.getMonth()+1}월 ${x.getDate()}일`};
+  ov.style.maxWidth='980px';
+  if(one!=null&&G[one]){const e=G[one],q=gs(e);ov.innerHTML=`<div class="row" style="justify-content:space-between"><button class="chip" data-act="gal">← 목록</button><button class="chip" data-act="closeOv">닫기 ✕</button></div><h2 style="margin:12px 0 4px">${esc(e.title)}</h2><p class="hint" style="margin:0 0 10px">${esc(q.d.name)} · ${e.score}점 · ${dt(e.at)}</p><div class="fig"><svg viewBox="0 0 ${GW} ${GH}">${svgInner(false,q.d,q.g)}</svg></div>`;$('#ov').classList.add('on');return}
+  ov.innerHTML=`<div class="row" style="justify-content:space-between"><h2>🖼️ 내 그래프 모음 (${G.length})</h2><button class="chip" data-act="closeOv">닫기 ✕</button></div>
+  <p class="hint">완성한 꺾은선그래프가 여기에 모여요. 누르면 크게 볼 수 있어요. (이 기기에만 저장돼요)</p>
+  ${G.length?`<div class="gal">${G.map((e,i)=>{const q=gs(e);if(!q)return'';return `<div class="gcard"><button class="gview" data-act="viewG" data-i="${i}"><svg viewBox="0 0 ${GW} ${GH}">${svgInner(false,q.d,q.g)}</svg></button><div class="gmeta"><b>${esc(e.title)}</b><span>${q.d.em} ${e.score}점 · ${dt(e.at)}</span></div><button class="gdel" data-act="delG" data-i="${i}" aria-label="지우기">🗑️</button></div>`}).join('')}</div>`:'<p style="text-align:center;font-size:20px;padding:30px 0">아직 완성한 그래프가 없어요. 미션을 끝내면 여기에 모여요! 📈</p>'}`;
+  $('#ov').classList.add('on');
+}
+function album(){
+  $('#ovb').style.maxWidth='';
+  const own=ST.filter(s=>save.st[s[0]]).length;
+  $('#ovb').innerHTML=`<div class="row" style="justify-content:space-between"><h2>📒 스티커 앨범 ${own}/${ST.length}</h2><button class="chip" data-act="closeOv">닫기 ✕</button></div>
+  <p class="hint">일반 · <span style="color:#4f8cff;font-weight:700">희귀</span> · <span style="color:#e0a400;font-weight:700">전설</span> 스티커를 모아 봐요!</p>
+  <div class="alb">${ST.map(s=>save.st[s[0]]?`<div class="r${s[2]}"><span>${s[0]}</span>${s[1]}${save.st[s[0]]>1?' ×'+save.st[s[0]]:''}</div>`:`<div class="no r${s[2]}"><span>❔</span>${RN[s[2]]}</div>`).join('')}</div>`;
+  $('#ov').classList.add('on');
+}
+
+render();
+}
+</script>
+</body></html>
